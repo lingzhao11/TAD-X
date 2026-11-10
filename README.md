@@ -28,7 +28,7 @@ TAD-X is built on standard scientific computing libraries. We recommend using Py
 
 ```bash
 # Clone the repository
-git clone [https://github.com/YourUsername/TAD-X.git](https://github.com/YourUsername/TAD-X.git)
+git clone [https://github.com/lingzhao11/TAD-X.git](https://github.com/lingzhao11/TAD-X.git)
 cd TAD-X
 
 # Install dependencies
