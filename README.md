@@ -2,7 +2,7 @@
 
 CHORD is a robust computational framework that fundamentally shifts the paradigm of TAD detection from heuristic approximation to exact mathematical solving. By rigorously optimizing the Calinski-Harabasz (CH) index via dynamic programming and 2D prefix sum acceleration, CHORD guarantees the identification of global optima, ensuring highly stable performance even under extreme data sparsity and noise.
 
-![CHORD Framework](data/framework.jpg)
+![CHORD Framework](framework.jpg)
 
 ## 📂 Repository Structure
 
