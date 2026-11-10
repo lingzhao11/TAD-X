@@ -73,7 +73,6 @@ python downstream/plot_protein_enrichment.py \
     --protein CTCF \
     --out_img TAD_X_CTCF_Enrichment.pdf
 ```
-![CHORD Framework](DATA/ctcf.png)
 ## 📊 Output format
 
 TAD-X outputs the inferred domains in a standard, universally compatible BED format (without headers) containing three columns:
