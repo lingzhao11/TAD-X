@@ -1,6 +1,6 @@
-# CHORD: Deterministic Demarcation of Topologically Associating Domains via Exact Optimization
+# TAD-X: FFT-based identification of complex topologically associating domains
 
-CHORD is a robust computational framework that fundamentally shifts the paradigm of TAD detection from heuristic approximation to exact mathematical solving. By rigorously optimizing the Calinski-Harabasz (CH) index via dynamic programming and 2D prefix sum acceleration, CHORD guarantees the identification of global optima, ensuring highly stable performance even under extreme data sparsity and noise.
+TAD-X is an advanced computational framework that fundamentally shifts the paradigm of 3D genome analysis from single-scale, mutually exclusive clustering to multiscale, intersecting domain inference. By leveraging **Fast Fourier Transform (FFT)-based spectral analysis**, TAD-X autonomously extracts intrinsic chromatin folding scales directly from Hi-C contact maps—eliminating the need for predefined empirical window sizes. Coupled with explicit geometric constraints and exact dynamic programming, TAD-X systematically resolves heterogeneous chromatin architectures, including **Singleton**, **Hierarchical**, and **Overlapped** domains, providing a powerful lens to explore the structural basis of spatial gene regulation and genomic instability.
 
 ![CHORD Framework](DATA/framework.png)
 
@@ -9,65 +9,82 @@ CHORD is a robust computational framework that fundamentally shifts the paradigm
 The repository is kept ultra-lightweight and highly integrated.
 
 ```text
-CHORD/
-├── chord.py                         # The core algorithm and visualization script (All-in-one)
-└── data/                            # Sample datasets for testing
-    ├── simulated_data.txt           # Simulated Hi-C matrix for algorithmic validation
-    ├── mat_100k_KR_p_arm.txt        # GM12878 Chr7 (0-58.1Mb) at 100kb resolution      
-    └── mat_50k_KR_chr7_23_27Mb.txt  # sub-matrix of Chr7 (23-27Mb) at 50kb 
+TAD-X/
+├── tad_x.py                           # Core algorithm: FFT scale discovery & DP inference
+├── run_tadx.py                        # Main CLI for calling TAD-X on Hi-C matrices
+├── downstream/                        # Modules for downstream evaluation & visualization
+│   ├── eval_oos.py                    # 5-fold cross-validation for Information Gain (ΔLL)
+│   └── plot_protein_enrichment.py     # ChIP-seq protein signal aggregation at boundaries
+├── DATA/                              # Toy datasets for tutorials
+│   ├── chr7_50kb_KR.npz               # Subset Hi-C matrix (chr7, K562 cell line)
+│   └── chr7_CTCF_K562.bigWig          # Subset CTCF ChIP-seq signal for chr7
+├── requirements.txt                   # Python dependencies
+└── README.md
 ```
 
 ## ⚙️ Requirements
 
-CHORD is developed using **Python 3.11** and requires minimal external dependencies.
-Please ensure the following packages are installed in your environment:
-
-* `numpy`
-* `scikit-learn`
-* `matplotlib`
-* `seaborn`
-* `tqdm`
-
-## 🚀 Usage
-
-CHORD requires a normalized intra-chromosomal Hi-C contact matrix as input (tab or space-separated pure numeric text file, without headers or bin annotations). 
-
-### 1. Standard Global Run (Recommended)
-By default, CHORD operates entirely parameter-free. It uses the Silhouette Score to automatically determine the mathematically optimal number of structural domains across the input matrix.
+TAD-X is built on standard scientific computing libraries. We recommend using Python 3.8 or higher.
 
 ```bash
-python chord.py --matrix data/mat_100k_KR_p_arm.txt --out_boundary result.txt --out_image tad_heatmap.png
+# Clone the repository
+git clone [https://github.com/YourUsername/TAD-X.git](https://github.com/YourUsername/TAD-X.git)
+cd TAD-X
+
+# Install dependencies
+pip install -r requirements.txt
 ```
 
-### 2. Advanced Usage: Localized Customized Exploration
-While CHORD perfectly captures the global mathematical optimum for large-scale matrices, researchers analyzing highly localized micro-regions (e.g., specific gene loci or enhancer clusters) often possess strong biological priors. To provide maximum flexibility for customized exploratory analysis or to align with specific experimental hypotheses, CHORD provides the `--k` parameter. 
+* Key dependencies: numpy, scipy, pandas, scikit-learn, matplotlib, seaborn, pyBigWig
 
-This allows users to bypass the automatic selection and manually specify the desired number of domains for targeted structural dissection:
+## 🚀 Quick Start (Tutorial)
+
+We provide a highly streamlined, three-step pipeline using the toy dataset (chr7 of K562 cells at 50kb resolution) included in the DATA/ folder.
+
+### Step 1: Infer TADs from Hi-C Data
+Use run_tadx.py to identify complex topologies from your normalized Hi-C matrix. The tool operates completely autonomously without requiring hyperparameters like K or window_size.
 
 ```bash
-python chord.py --matrix data/mat_50k_KR_chr7_23_27Mb.txt --k 14 
+python run_tadx.py \
+    --matrix DATA/chr7_50kb_KR.npz \
+    --chrom chr7 \
+    --res 50000 \
+    --out_bed chr7_TAD_X_domains.bed
 ```
 
-### Command Line Arguments
-* `--matrix` : (Required) Path to the input Hi-C matrix file.
-* `--k` : (Optional) Force a specific number of TADs (bypasses automatic Silhouette selection).
-* `--out_boundary` : (Optional) Output filename for the TAD boundaries. Default: `result.txt`.
-* `--out_image` : (Optional) Output filename for the visualization heatmap. Default: `tad_heatmap.png`.
-* `--cmap` : (Optional) Matplotlib colormap for the heatmap (e.g., `Reds`, `Blues`, `viridis`). Default: `Reds`.
+### Step 2: Evaluate Out-of-Sample Information Gain (Optional)
+To quantify the statistical goodness-of-fit and generalizability of the identified TADs, run the Out-of-Sample (OOS) evaluation script. This module uses 5-fold cross-validation to assess how well the topological architecture explains global interaction patterns ($\Delta$ Log-likelihood).
 
-## 📊 Output
+```bash
+python downstream/eval_oos.py \
+    --matrix DATA/chr7_50kb_KR.npz \
+    --bed chr7_TAD_X_domains.bed \
+    --res 50000 \
+    --max_dist 40
+```
 
-CHORD generates two outputs seamlessly:
+### Step 3: Biological Validation via Protein Enrichment (Optional)
+Verify the biological relevance of the inferred boundaries by calculating the spatial enrichment of architectural proteins (e.g., CTCF).(Note: A subset of CTCF ChIP-seq signal for chr7 is provided in the DATA/ folder for testing).
 
-1. **Boundary File (`result.txt`)**: A clear, tab-separated text file listing the Start and End bin indices (1-based) of the identified domains.
+```bash
+python downstream/plot_protein_enrichment.py \
+    --bed chr7_TAD_X_domains.bed \
+    --bw DATA/chr7_CTCF_K562.bigWig \
+    --protein CTCF \
+    --out_img TAD_X_CTCF_Enrichment.pdf
+```
+
+## 📊 Output format
+
+TAD-X outputs the inferred domains in a standard, universally compatible BED format (without headers) containing three columns:
+
 ```text
-Start_Bin    End_Bin
-1            12
-13           24
+Column 1 (Chromosome)    Column 2 (Start bp)     Column 3 (End bp)  
+chr7                      1000000                 1850000
+chr7                      1250000                 2500000
 ...
 ```
-
-2. **Visualization Heatmap (`tad_heatmap.png`)**: A publication-ready, high-resolution heatmap overlaid with crisp bounding boxes precisely demarcating the identified TAD structures.
+Note: TAD-X inherently preserves intersecting and nested intervals. Overlapping domains will appear as distinct intersecting rows in the BED file.
 
 ## 📖 Citation
 
